@@ -34,7 +34,7 @@ router.patch(
 );
 
 router.delete(
-  "/postId",
+  "/:postId",
   auth(Role.USER, Role.AUTHOR, Role.ADMIN),
   postController.deletePost,
 );
