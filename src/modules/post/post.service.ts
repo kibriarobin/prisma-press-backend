@@ -1,6 +1,15 @@
-import { CommentStatus, PostStatus } from "../../../generated/prisma/enums";
+import {
+  CommentStatus,
+  PostStatus,
+  Role,
+} from "../../../generated/prisma/enums";
+import { PostWhereInput } from "../../../generated/prisma/models";
 import { prisma } from "../../lib/prisma";
-import { ICreatePostPayload, IUpdatePostPayload } from "./post.interface";
+import {
+  ICreatePostPayload,
+  IPostQuery,
+  IUpdatePostPayload,
+} from "./post.interface";
 
 const createPostIntoDB = async (
   payload: ICreatePostPayload,
@@ -16,8 +25,89 @@ const createPostIntoDB = async (
   return result;
 };
 
-const getAllPostFromDB = async () => {
+const getAllPostFromDB = async (query: IPostQuery) => {
+  const limit = query.limit ? Number(query.limit) : 5;
+  const page = query.page ? Number(query.page) : 1;
+  const skip = (page - 1) * limit;
+  const sortBy = query.sortBy ? query.sortBy : "createdAt";
+  const sortOrder = query.sortOrder ? query.sortOrder : "desc";
+  const tags = query.tags ? JSON.parse(query.tags as string) : null;
+  const tagsArray = Array.isArray(tags) ? tags : [];
+
+  const andConditions: PostWhereInput[] = [];
+
+  if (query.searchItem) {
+    andConditions.push({
+      OR: [
+        {
+          title: {
+            contains: query.searchItem,
+            mode: "insensitive",
+          },
+        },
+        {
+          content: {
+            contains: query.searchItem,
+            mode: "insensitive",
+          },
+        },
+      ],
+    });
+  }
+
+  if (query.title) {
+    andConditions.push({
+      title: query.title,
+    });
+  }
+
+  if (query.content) {
+    andConditions.push({
+      content: query.content,
+    });
+  }
+
+  if (query.authorId) {
+    andConditions.push({
+      authorId: query.authorId,
+    });
+  }
+
+  if (query.isFeatured) {
+    andConditions.push({
+      isFeatured: Boolean(query.isFeatured),
+    });
+  }
+
+  if (query.tags) {
+    andConditions.push({
+      tags: {
+        hasSome: tagsArray,
+      },
+    });
+  }
+
+  if (query.status) {
+    andConditions.push({
+      status: query.status,
+    });
+  }
+
   const posts = await prisma.post.findMany({
+    // search & filter
+    where: {
+      AND: andConditions,
+    },
+
+    // pagination
+    take: limit,
+    skip: skip,
+
+    // sort
+    orderBy: {
+      [sortBy]: sortOrder,
+    },
+
     include: {
       author: {
         select: {
@@ -176,6 +266,9 @@ const getPostStatsFromDB = async () => {
       totalComments,
       approvedComments,
       rejectedComments,
+      totalUsers,
+      adminUsers,
+      normalUsers,
       totalPostViewsAggregate,
     ] = await Promise.all([
       await tx.post.count(),
@@ -212,6 +305,20 @@ const getPostStatsFromDB = async () => {
         },
       }),
 
+      await tx.user.count(),
+
+      await tx.user.count({
+        where: {
+          role: Role.ADMIN,
+        },
+      }),
+
+      await tx.user.count({
+        where: {
+          role: Role.USER,
+        },
+      }),
+
       await tx.post.aggregate({
         _sum: {
           views: true,
@@ -227,6 +334,9 @@ const getPostStatsFromDB = async () => {
       totalComments,
       approvedComments,
       rejectedComments,
+      totalUsers,
+      adminUsers,
+      normalUsers,
       totalPostViews: totalPostViewsAggregate._sum.views,
     };
   });
