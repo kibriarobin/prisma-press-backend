@@ -8,6 +8,8 @@ model Post {
     tags       String[]
     views      Int        @default(0)
 
+    isPremium Boolean @default(false)
+
     authorId String
     author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
