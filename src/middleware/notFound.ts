@@ -6,6 +6,6 @@ export const notFound = (req: Request, res: Response) => {
     status: 404,
     error: "Not Found",
     path: req.originalUrl,
-    date: new Date(),
+    date: Date(),
   });
 };
