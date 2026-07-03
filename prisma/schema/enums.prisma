@@ -23,6 +23,6 @@ enum CommentStatus {
 
 enum SubscriptionStatus {
     ACTIVE
-    CANCELLED
+    CANCELED
     EXPIRED
 }

@@ -1,6 +1,7 @@
 import config from "../../config";
 import { prisma } from "../../lib/prisma";
 import { stripe } from "../../lib/stripe";
+import { handleChangeSubscription, handleCheckoutSessionCompleted } from "./subscription.utils";
 
 const createCheckoutSession = async (userId: string) => {
   const transactionResult = await prisma.$transaction(async (tx) => {
@@ -54,51 +55,16 @@ const handleWebhook = async (payload: Buffer, signature: string) => {
   // Handle the event
   switch (event.type) {
     case "checkout.session.completed":
-      const session = event.data.object;
-      const userId = session.metadata?.userId;
-      const stripeCustomerId = session.customer as string;
-      const stripeSubscriptionId = session.subscription as string;
-
-      if (!userId || !stripeCustomerId || !stripeSubscriptionId) {
-        throw new Error("Webhook failed");
-      }
-
-      const stripeSubscription =
-        await stripe.subscriptions.retrieve(stripeSubscriptionId);
-
-      const currentPeriodStartInMilliSeconds =
-        stripeSubscription.items.data[0]?.current_period_start!;
-      const currentPeriodStart = new Date(
-        currentPeriodStartInMilliSeconds * 1000,
-      );
-
-      const currentPeriodEndInMilliSeconds =
-        stripeSubscription.items.data[0]?.current_period_end!;
-      const currentPeriodEnd = new Date(currentPeriodEndInMilliSeconds * 1000);
-
-      await prisma.subscription.upsert({
-        where: { userId },
-        create: {
-          userId,
-          stripeCustomerId,
-          stripeSubscriptionId,
-          currentPeriodStart,
-          currentPeriodEnd,
-        },
-        update: {
-          stripeCustomerId,
-          stripeSubscriptionId,
-          currentPeriodStart,
-          currentPeriodEnd,
-        },
-      });
+      await handleCheckoutSessionCompleted(event.data.object);
 
       break;
     case "customer.subscription.updated":
-      const paymentMethod = event.data.object;
+      await handleChangeSubscription(event.data.object);
 
       break;
     case "customer.subscription.deleted":
+      await handleChangeSubscription(event.data.object);
+
       break;
     default:
       // Unexpected event type
@@ -106,6 +72,8 @@ const handleWebhook = async (payload: Buffer, signature: string) => {
       break;
   }
 };
+
+
 
 export const subscriptionService = {
   createCheckoutSession,
