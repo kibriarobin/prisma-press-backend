@@ -51,23 +51,10 @@ const getCommentByAuthorIdFromDB = async (authorId: string) => {
   return result;
 };
 
-const getCommentByCommentIdFromDB = async (commentId: string) => {
-  const result = await prisma.comment.findUniqueOrThrow({
+const getCommentByPostIdFromDB = async (postId: string) => {
+  const result = await prisma.comment.findMany({
     where: {
-      id: commentId,
-    },
-    include: {
-      post: {
-        select: {
-          title: true,
-          status: true,
-        },
-      },
-      author: {
-        select: {
-          name: true,
-        },
-      },
+      postId,
     },
   });
 
@@ -140,7 +127,7 @@ const moderateCommentIntoDB = async (
 export const commentService = {
   createCommentIntoDB,
   getCommentByAuthorIdFromDB,
-  getCommentByCommentIdFromDB,
+  getCommentByPostIdFromDB,
   updateCommentIntoDB,
   deleteCommentFromDB,
   moderateCommentIntoDB,

@@ -9,7 +9,7 @@ import { commentRoutes } from "./modules/comment/comment.route";
 import { notFound } from "./middleware/notFound";
 import { globalErrorHandler } from "./middleware/globalErrorHandler";
 import { subscriptionRoutes } from "./modules/subscription/subscription.route";
-import { stripe } from "./lib/stripe";
+import { premiumRoutes } from "./modules/premium/premium.route";
 
 const app: Application = express();
 
@@ -40,6 +40,9 @@ app.use("/api/posts", postRoutes);
 app.use("/api/comments", commentRoutes);
 
 app.use("/api/v1/subscriptions", subscriptionRoutes);
+
+app.use("/api/premium", premiumRoutes)
+
 
 app.use(notFound);
 app.use(globalErrorHandler);

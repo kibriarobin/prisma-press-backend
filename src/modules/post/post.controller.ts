@@ -31,7 +31,8 @@ const getAllPost = catchAsync(
       success: true,
       statusCode: httpStatus.OK,
       message: "Post retrieved successfully",
-      data: result,
+      data: result.data,
+      meta: result.meta,
     });
   },
 );

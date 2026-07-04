@@ -26,6 +26,10 @@ export const handleCheckoutSessionCompleted = async (
   const stripeCustomerId = session.customer as string;
   const stripeSubscriptionId = session.subscription as string;
 
+  console.log("session metadata:", session.metadata); 
+  console.log("stripeCustomerId:", session.customer);
+  console.log("stripeSubscriptionId:", session.subscription);
+
   if (!userId || !stripeCustomerId || !stripeSubscriptionId) {
     console.log("Missing value for checkout session.");
     return;
