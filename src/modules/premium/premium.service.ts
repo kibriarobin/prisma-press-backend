@@ -85,6 +85,7 @@ const getPremiumContent = async (query: IPostQuery) => {
     take: limit,
     include: {
       author: { select: { name: true, email: true } },
+      comments: true,
       _count: { select: { comments: true } },
     },
   });
